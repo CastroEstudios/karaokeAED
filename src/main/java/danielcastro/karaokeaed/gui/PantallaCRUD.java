@@ -4,11 +4,11 @@
  */
 package danielcastro.karaokeaed.gui;
 
-import danielcastro.karaokeaed.dao.Cancion_Usuario;
+import danielcastro.karaokeaed.model.CancionUsuario;
 import com.formdev.flatlaf.FlatDarkLaf;
-import danielcastro.karaokeaed.dao.Cancion;
+import danielcastro.karaokeaed.model.Cancion;
 import danielcastro.karaokeaed.util.CustomTableHeader;
-import danielcastro.karaokeaed.dao.Usuario;
+import danielcastro.karaokeaed.model.Usuario;
 import java.awt.Color;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
@@ -16,17 +16,16 @@ import java.awt.event.ActionListener;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import static java.util.Collections.list;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.NoResultException;
@@ -104,7 +103,7 @@ public class PantallaCRUD extends javax.swing.JFrame {
     private void fixedClassesToArrayList() {
         listaClases.add(0, Cancion.class);
         listaClases.add(1, Usuario.class);
-        listaClases.add(2, Cancion_Usuario.class);
+        listaClases.add(2, CancionUsuario.class);
         jComboTabla.addItem("Cancion");
         jComboTabla.addItem("Usuario");
         jComboTabla.addItem("Cancion_Usuario");
@@ -160,7 +159,7 @@ public class PantallaCRUD extends javax.swing.JFrame {
         dtm.setColumnCount(0);
 
         attributeNames = getAttributeNames(clazz);
-        if (clazz != Cancion_Usuario.class) {
+        if (clazz != CancionUsuario.class) {
             attributeNames = attributeNames.subList(0, attributeNames.size() - 1);
         }
         dtm.setColumnIdentifiers(attributeNames.toArray());
@@ -171,9 +170,6 @@ public class PantallaCRUD extends javax.swing.JFrame {
 
         list.forEach(object -> {
             Map<String, Object> attributeValues = getAttributeValues(object);
-            if (clazz != Cancion_Usuario.class) {
-                attributeValues.remove("cantadas");
-            }
             Map<String, Object> orderedAttributeValues = new LinkedHashMap<>();
             for (String attributeName : attributeNames) {
                 orderedAttributeValues.put(attributeName, attributeValues.get(attributeName));
@@ -243,6 +239,7 @@ public class PantallaCRUD extends javax.swing.JFrame {
             for (int j = 0; j < columnCount; j++) {
                 String columnName = jTable.getColumnName(j);
                 Object value = jTable.getValueAt(i, j);
+                value = isFechaNull(value);
                 setValueForInstance(clazz, instance, columnName, value);
             }
             arrayList.add(instance);
@@ -283,7 +280,16 @@ public class PantallaCRUD extends javax.swing.JFrame {
             return value;
         }
     }
-
+    
+    private Object isFechaNull(Object fechaObjeto) {
+        LocalDate fecha = null;
+        if(fechaObjeto == null) {
+            fecha = LocalDate.now();
+            return fecha;
+        }
+        return fechaObjeto;
+    }
+    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
