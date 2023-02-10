@@ -2,12 +2,12 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package danielcastro.karaokeaed.dao;
+package danielcastro.karaokeaed.model;
 
 import java.io.Serializable;
 import java.time.LocalDate;
+import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
@@ -19,10 +19,11 @@ import javax.persistence.Table;
  */
 @Entity
 @Table(name = "Cancion_Usuario")
-public class Cancion_Usuario implements Serializable {
+public class CancionUsuario implements Serializable {
     
-    @Id @GeneratedValue
+    @Id
     private int id;
+    @Column (name = "Fecha")
     private LocalDate fecha;
     @ManyToOne
     @JoinColumn(name = "Cancion_Id")
@@ -31,12 +32,12 @@ public class Cancion_Usuario implements Serializable {
     @JoinColumn(name = "Usuario_Id")
     private Usuario usuario;
 
-    public Cancion_Usuario() {
+    public CancionUsuario() {
     }
 
-    public Cancion_Usuario(int id, LocalDate fecha, Cancion cancion, Usuario usuario) {
+    public CancionUsuario(int id, Cancion cancion, Usuario usuario) {
         this.id = id;
-        this.fecha = fecha;
+        this.fecha = LocalDate.now();
         this.cancion = cancion;
         this.usuario = usuario;
     }

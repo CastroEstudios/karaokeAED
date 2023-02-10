@@ -1,4 +1,4 @@
-package danielcastro.karaokeaed.dao;
+package danielcastro.karaokeaed.model;
 
 import java.io.Serializable;
 import java.util.List;
@@ -23,7 +23,7 @@ public class Cancion implements Serializable {
     @Column(name = "Repeticiones", nullable = false)
     private int repeticiones;
     @OneToMany(mappedBy = "cancion", cascade = CascadeType.ALL)
-    List<Cancion_Usuario> cantadas;
+    List<CancionUsuario> cantadas;
 
     public Cancion() {
     }
@@ -35,7 +35,7 @@ public class Cancion implements Serializable {
         this.repeticiones = repeticiones;
     }
 
-    public Cancion(int id, String nombre, String autor, int repeticiones, List<Cancion_Usuario> cantadas) {
+    public Cancion(int id, String nombre, String autor, int repeticiones, List<CancionUsuario> cantadas) {
         this.id = id;
         this.nombre = nombre;
         this.autor = autor;
@@ -75,11 +75,11 @@ public class Cancion implements Serializable {
         this.repeticiones = repeticiones;
     }
 
-    public List<Cancion_Usuario> getCantadas() {
+    public List<CancionUsuario> getCantadas() {
         return cantadas;
     }
 
-    public void setCantadas(List<Cancion_Usuario> cantadas) {
+    public void setCantadas(List<CancionUsuario> cantadas) {
         this.cantadas = cantadas;
     }
 
