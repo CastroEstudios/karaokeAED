@@ -2,6 +2,7 @@ package danielcastro.karaokeaed.model;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -14,7 +15,7 @@ import javax.persistence.Table;
 public class Usuario implements Serializable {
 
     @Id
-    @Column(name = "Id")
+    @Column(name = "Id", unique = true)
     private int id;
     @Column(name = "Nombre", nullable = false)
     private String nombre;
@@ -22,7 +23,7 @@ public class Usuario implements Serializable {
     private String apellidos;
     @Column(name = "Canta_Mal", nullable = false)
     private boolean canta_mal;
-    @OneToMany(mappedBy = "cancion", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
     List<CancionUsuario> cantadas;
 
     public Usuario() {
@@ -33,14 +34,6 @@ public class Usuario implements Serializable {
         this.nombre = nombre;
         this.apellidos = apellidos;
         this.canta_mal = canta_mal;
-    }
-
-    public Usuario(int id, String nombre, String apellidos, boolean canta_mal, List<CancionUsuario> cantadas) {
-        this.id = id;
-        this.nombre = nombre;
-        this.apellidos = apellidos;
-        this.canta_mal = canta_mal;
-        this.cantadas = cantadas;
     }
     
     public int getId() {
@@ -88,4 +81,42 @@ public class Usuario implements Serializable {
         return "" + id;
     }
 
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 59 * hash + this.id;
+        hash = 59 * hash + Objects.hashCode(this.nombre);
+        hash = 59 * hash + Objects.hashCode(this.apellidos);
+        hash = 59 * hash + (this.canta_mal ? 1 : 0);
+        hash = 59 * hash + Objects.hashCode(this.cantadas);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Usuario other = (Usuario) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if (this.canta_mal != other.canta_mal) {
+            return false;
+        }
+        if (!Objects.equals(this.nombre, other.nombre)) {
+            return false;
+        }
+        if (!Objects.equals(this.apellidos, other.apellidos)) {
+            return false;
+        }
+        return Objects.equals(this.cantadas, other.cantadas);
+    }
+    
 }

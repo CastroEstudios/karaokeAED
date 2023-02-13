@@ -6,11 +6,13 @@ package danielcastro.karaokeaed.dao;
 
 import danielcastro.karaokeaed.iface.IUsuarioDAO;
 import danielcastro.karaokeaed.model.Usuario;
+import java.awt.Toolkit;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
+import javax.swing.JOptionPane;
 
 /**
  *
@@ -36,26 +38,78 @@ public class UsuarioDAOImpl implements IUsuarioDAO {
 
     @Override
     public List<Usuario> findAll() {
-        Query query = entityManager.createQuery("FROM Usuario");
-        return query.getResultList();
+        try {
+            Query query = entityManager.createQuery("FROM Usuario");
+            return query.getResultList();
+        }catch(Exception e) {
+            Logger.getLogger(Usuario.class.getName()).log(Level.SEVERE, null, e);
+        }
+        return null;
     }
 
-    @Override
     public Usuario add(Usuario usuario) {
-        entityManager.persist(usuario);
-        return usuario;
+        try {
+            entityManager.getTransaction().begin();
+            entityManager.persist(usuario);
+            entityManager.flush();
+            entityManager.getTransaction().commit();
+            return usuario;
+        } catch (Exception e) {
+            entityManager.getTransaction().rollback();
+            Logger.getLogger(Usuario.class.getName()).log(Level.SEVERE
+                    , null, e);
+            Toolkit.getDefaultToolkit().beep();
+            JOptionPane.showMessageDialog(null
+                    , "Error añadiendo usuario", "Error"
+                    , JOptionPane.ERROR_MESSAGE);
+        }
+        return null;
     }
 
     @Override
     public Usuario update(Usuario usuario) {
-        entityManager.merge(usuario);
-        return usuario;
+        try {
+            entityManager.getTransaction().begin();
+            entityManager.merge(usuario);
+            entityManager.getTransaction().commit();
+            return usuario;
+        } catch (Exception e) {
+            entityManager.getTransaction().rollback();
+            Logger.getLogger(Usuario.class.getName()).log(Level.SEVERE
+                    , null, e);
+            Toolkit.getDefaultToolkit().beep();
+            JOptionPane.showMessageDialog(null
+                    , "Error actualizando usuario", "Error"
+                    , JOptionPane.ERROR_MESSAGE);
+        }
+        return null;
     }
 
     @Override
     public boolean delete(Usuario usuario) {
-        entityManager.remove(usuario);
-        return true;
+        try {
+            entityManager.getTransaction().begin();
+            entityManager.remove(entityManager.contains(usuario) ? usuario : entityManager.merge(usuario));
+            entityManager.getTransaction().commit();
+            return true;
+        } catch (Exception e) {
+            entityManager.getTransaction().rollback();
+            Logger.getLogger(Usuario.class.getName()).log(Level.SEVERE
+                    , null, e);
+            Toolkit.getDefaultToolkit().beep();
+            JOptionPane.showMessageDialog(null
+                    , "Error borrando usuario", "Error"
+                    , JOptionPane.ERROR_MESSAGE);
+        }
+        return false;
+    }
+    
+    public void updateOrDelete(Usuario usuario, boolean isInList) {
+        if (isInList) {
+            update(usuario);
+        } else {
+            delete(usuario);
+        }
     }
     
 }

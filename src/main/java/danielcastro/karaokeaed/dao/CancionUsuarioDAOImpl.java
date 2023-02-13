@@ -4,8 +4,8 @@
  */
 package danielcastro.karaokeaed.dao;
 
-import danielcastro.karaokeaed.iface.ICancionDAO;
-import danielcastro.karaokeaed.model.Cancion;
+import danielcastro.karaokeaed.iface.ICancionUsuarioDAO;
+import danielcastro.karaokeaed.model.CancionUsuario;
 import java.awt.Toolkit;
 import java.util.List;
 import java.util.logging.Level;
@@ -16,92 +16,100 @@ import javax.swing.JOptionPane;
 
 /**
  *
- * @author 2dama
+ * @author Anima
  */
-public class CancionDAOImpl implements ICancionDAO {
+public class CancionUsuarioDAOImpl implements ICancionUsuarioDAO {
     
     private final EntityManager entityManager;
-
-    public CancionDAOImpl(EntityManager entityManager) {
-        this.entityManager = entityManager;
+    
+    public CancionUsuarioDAOImpl(EntityManager entityManager) {
+            this.entityManager = entityManager;
     }
-
+    
     @Override
-    public Cancion findById(Integer id) {
+    public CancionUsuario findById(Integer id) {
         try {
-            return entityManager.find(Cancion.class, id);
+            return entityManager.find(CancionUsuario.class, id);
         }catch(Exception e) {
-            Logger.getLogger(Cancion.class.getName()).log(Level.SEVERE, null, e);
+            Logger.getLogger(CancionUsuario.class.getName()).log(Level.SEVERE, null, e);
         }
         return null;
     }
 
     @Override
-    public List<Cancion> findAll() {
+    public List<CancionUsuario> findAll() {
         try {
-            Query query = entityManager.createQuery("FROM Cancion");
+            Query query = entityManager.createQuery("FROM CancionUsuario");
             return query.getResultList();
         }catch(Exception e) {
-            Logger.getLogger(Cancion.class.getName()).log(Level.SEVERE, null, e);
+            Logger.getLogger(CancionUsuario.class.getName()).log(Level.SEVERE, null, e);
         }
         return null;
     }
 
-    public Cancion add(Cancion cancion) {
+    public CancionUsuario add(CancionUsuario cancionUsuario) {
         try {
             entityManager.getTransaction().begin();
-            entityManager.persist(cancion);
+            entityManager.persist(cancionUsuario);
             entityManager.flush();
             entityManager.getTransaction().commit();
-            return cancion;
+            return cancionUsuario;
         } catch (Exception e) {
             entityManager.getTransaction().rollback();
-            Logger.getLogger(Cancion.class.getName()).log(Level.SEVERE
+            Logger.getLogger(CancionUsuario.class.getName()).log(Level.SEVERE
                     , null, e);
             Toolkit.getDefaultToolkit().beep();
             JOptionPane.showMessageDialog(null
-                    , "Error añadiendo cancion", "Error"
+                    , "Error añadiendo el registro de la cancion", "Error"
                     , JOptionPane.ERROR_MESSAGE);
         }
         return null;
     }
 
     @Override
-    public Cancion update(Cancion cancion) {
+    public CancionUsuario update(CancionUsuario cancionUsuario) {
         try {
             entityManager.getTransaction().begin();
-            entityManager.merge(cancion);
+            entityManager.merge(cancionUsuario);
             entityManager.getTransaction().commit();
-            return cancion;
+            return cancionUsuario;
         } catch (Exception e) {
             entityManager.getTransaction().rollback();
-            Logger.getLogger(Cancion.class.getName()).log(Level.SEVERE
+            Logger.getLogger(CancionUsuario.class.getName()).log(Level.SEVERE
                     , null, e);
             Toolkit.getDefaultToolkit().beep();
             JOptionPane.showMessageDialog(null
-                    , "Error actualizando cancion", "Error"
+                    , "Error actualizando el registro de la cancion", "Error"
                     , JOptionPane.ERROR_MESSAGE);
         }
         return null;
     }
 
     @Override
-    public boolean delete(Cancion cancion) {
+    public boolean delete(CancionUsuario cancionUsuario) {
         try {
             entityManager.getTransaction().begin();
-            entityManager.remove(entityManager.contains(cancion) ? cancion : entityManager.merge(cancion));
+            entityManager.remove(entityManager.contains(cancionUsuario) ? cancionUsuario : entityManager.merge(cancionUsuario));
             entityManager.getTransaction().commit();
             return true;
         } catch (Exception e) {
             entityManager.getTransaction().rollback();
-            Logger.getLogger(Cancion.class.getName()).log(Level.SEVERE
+            Logger.getLogger(CancionUsuario.class.getName()).log(Level.SEVERE
                     , null, e);
             Toolkit.getDefaultToolkit().beep();
             JOptionPane.showMessageDialog(null
-                    , "Error borrando cancion", "Error"
+                    , "Error borrando el registro de la cancion", "Error"
                     , JOptionPane.ERROR_MESSAGE);
         }
         return false;
+    }
+    
+    public void updateOrDelete(CancionUsuario cancionUsuario, boolean isInList) {
+        if (isInList) {
+            update(cancionUsuario);
+        } else {
+            //delete(cancionUsuario);
+        }
     }
     
 }

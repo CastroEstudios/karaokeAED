@@ -6,6 +6,8 @@ package danielcastro.karaokeaed.model;
 
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.util.Objects;
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -23,14 +25,14 @@ public class CancionUsuario implements Serializable {
     
     @Id
     private int id;
+    @ManyToOne()
+    @JoinColumn(name = "cancion_id")
+    private Cancion cancion;
+    @ManyToOne()
+    @JoinColumn(name = "usuario_id")
+    private Usuario usuario;
     @Column (name = "Fecha")
     private LocalDate fecha;
-    @ManyToOne
-    @JoinColumn(name = "Cancion_Id")
-    private Cancion cancion;
-    @ManyToOne
-    @JoinColumn(name = "Usuario_Id")
-    private Usuario usuario;
 
     public CancionUsuario() {
     }
@@ -38,8 +40,8 @@ public class CancionUsuario implements Serializable {
     public CancionUsuario(int id, Cancion cancion, Usuario usuario) {
         this.id = id;
         this.fecha = LocalDate.now();
-        this.cancion = cancion;
         this.usuario = usuario;
+        this.cancion = cancion;
     }
 
     public int getId() {
@@ -95,4 +97,40 @@ public class CancionUsuario implements Serializable {
         return "Cancion_Usuario{" + "id=" + id + ", fecha=" + fecha + ", cancion=" + cancion + ", usuario=" + usuario + '}';
     }
 
+    @Override
+    public int hashCode() {
+        int hash = 5;
+        hash = 97 * hash + this.id;
+        hash = 97 * hash + Objects.hashCode(this.cancion);
+        hash = 97 * hash + Objects.hashCode(this.usuario);
+        hash = 97 * hash + Objects.hashCode(this.fecha);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final CancionUsuario other = (CancionUsuario) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if (!Objects.equals(this.cancion, other.cancion)) {
+            return false;
+        }
+        if (!Objects.equals(this.usuario, other.usuario)) {
+            return false;
+        }
+        return Objects.equals(this.fecha, other.fecha);
+    }
+
+    
+    
 }

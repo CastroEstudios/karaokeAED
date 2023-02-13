@@ -21,4 +21,5 @@ public interface IDAO<T, I> {
     T update(T t);
 
     boolean delete(T t);
+    
 }

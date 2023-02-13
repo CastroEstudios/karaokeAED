@@ -2,6 +2,7 @@ package danielcastro.karaokeaed.model;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -14,32 +15,28 @@ import javax.persistence.Table;
 public class Cancion implements Serializable {
 
     @Id
-    @Column(name = "Id")
+    @Column(name = "Id", unique = true)
     private int id;
     @Column(name = "Nombre", nullable = false)
     private String nombre;
     @Column(name = "Autor", nullable = false)
     private String autor;
-    @Column(name = "Repeticiones", nullable = false)
-    private int repeticiones;
     @OneToMany(mappedBy = "cancion", cascade = CascadeType.ALL)
     List<CancionUsuario> cantadas;
 
     public Cancion() {
     }
 
-    public Cancion(int id, String nombre, String autor, int repeticiones) {
+    public Cancion(int id, String nombre, String autor) {
         this.id = id;
         this.nombre = nombre;
         this.autor = autor;
-        this.repeticiones = repeticiones;
     }
 
-    public Cancion(int id, String nombre, String autor, int repeticiones, List<CancionUsuario> cantadas) {
+    public Cancion(int id, String nombre, String autor, List<CancionUsuario> cantadas) {
         this.id = id;
         this.nombre = nombre;
         this.autor = autor;
-        this.repeticiones = repeticiones;
         this.cantadas = cantadas;
     }
     
@@ -67,14 +64,6 @@ public class Cancion implements Serializable {
         this.autor = autor;
     }
 
-    public int getRepeticiones() {
-        return repeticiones;
-    }
-
-    public void setRepeticiones(int repeticiones) {
-        this.repeticiones = repeticiones;
-    }
-
     public List<CancionUsuario> getCantadas() {
         return cantadas;
     }
@@ -87,5 +76,39 @@ public class Cancion implements Serializable {
     public String toString() {
         return "" + id;
     }
-    
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 43 * hash + this.id;
+        hash = 43 * hash + Objects.hashCode(this.nombre);
+        hash = 43 * hash + Objects.hashCode(this.autor);
+        hash = 43 * hash + Objects.hashCode(this.cantadas);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Cancion other = (Cancion) obj;
+        if (this.id != other.id) {
+            return false;
+        }
+        if (!Objects.equals(this.nombre, other.nombre)) {
+            return false;
+        }
+        if (!Objects.equals(this.autor, other.autor)) {
+            return false;
+        }
+        return Objects.equals(this.cantadas, other.cantadas);
+    }
+
 }

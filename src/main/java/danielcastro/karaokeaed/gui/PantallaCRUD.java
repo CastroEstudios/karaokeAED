@@ -6,6 +6,9 @@ package danielcastro.karaokeaed.gui;
 
 import danielcastro.karaokeaed.model.CancionUsuario;
 import com.formdev.flatlaf.FlatDarkLaf;
+import danielcastro.karaokeaed.dao.CancionDAOImpl;
+import danielcastro.karaokeaed.dao.CancionUsuarioDAOImpl;
+import danielcastro.karaokeaed.dao.UsuarioDAOImpl;
 import danielcastro.karaokeaed.model.Cancion;
 import danielcastro.karaokeaed.util.CustomTableHeader;
 import danielcastro.karaokeaed.model.Usuario;
@@ -19,18 +22,14 @@ import java.lang.reflect.InvocationTargetException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.NoResultException;
-import javax.persistence.Persistence;
-import javax.persistence.TypedQuery;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 
@@ -39,8 +38,7 @@ import javax.swing.table.DefaultTableModel;
  * @author Anima
  */
 public class PantallaCRUD extends javax.swing.JFrame {
-
-    private final EntityManagerFactory emf = Persistence.createEntityManagerFactory("CRM");
+    EntityManager em;
     DefaultTableModel dtm = new DefaultTableModel();
     List<Class> listaClases = new ArrayList();
     List<String> attributeNames = new ArrayList();
@@ -53,60 +51,58 @@ public class PantallaCRUD extends javax.swing.JFrame {
     public PantallaCRUD() {
         initComponents();
         this.setLocationRelativeTo(null);
-        styles();
+        initEM();
+        applyStyles();
         fixedClassesToArrayList();
         createArrayLists();
         comboListener();
     }
-
-    private void styles() {
-        //Applies the CustomTableHeader class to the Header and the rest of the table
-        jTable.getTableHeader().setDefaultRenderer(new CustomTableHeader());
-        jTable.setDefaultRenderer(Object.class, new CustomTableHeader());
-        //Set background colors
-        jPanelMenu.setBackground(Color.decode("#dde5b6"));
-        jPanelTable.setBackground(Color.decode("#dde5b6"));
-        //Makes the primary key rows uneditable
-        //Sets the images
-        PantallaInicio.initBGImage(
-                ".\\src\\main\\java\\danielcastro\\karaokeaed\\img\\BG4.png",
-                PantallaInicio.labelIntoJPanel(jPanel1));
-        PantallaInicio.initBGImage(
-                ".\\src\\main\\java\\danielcastro\\karaokeaed\\img\\saveButton.png",
-                botonSave);
-        PantallaInicio.initBGImage(
-                ".\\src\\main\\java\\danielcastro\\karaokeaed\\img\\cancelBoton.png",
-                botonCancel);
-        PantallaInicio.initBGImage(
-                ".\\src\\main\\java\\danielcastro\\karaokeaed\\img\\addBoton.png",
-                botonCreate);
-        PantallaInicio.initBGImage(
-                ".\\src\\main\\java\\danielcastro\\karaokeaed\\img\\deleteBoton.png",
-                botonDelete);
+    
+    private void initEM() {
+        this.em = PantallaInicio.em;
     }
 
-    public Object objectInstance(Class clazz) {
-        Object instance = null;
-        try {
-            //Creates a new constructor of the class 'clazz' and sets the
-            //Object 'instance' to use that constructor
-            Constructor constructor = clazz.getConstructor();
-            instance = constructor.newInstance();
-        } catch (InstantiationException | IllegalAccessException
-                | IllegalArgumentException | InvocationTargetException
-                | NoSuchMethodException | SecurityException ex) {
-            Logger.getLogger(PantallaCRUD.class.getName()).log(Level.SEVERE, null, ex);
+    private void applyStyles() {
+        // Apply the CustomTableHeader class to the header and the rest of the table
+        jTable.getTableHeader().setDefaultRenderer(new CustomTableHeader());
+        jTable.setDefaultRenderer(Object.class, new CustomTableHeader());
+
+        // Set background colors
+        Color backgroundColor = Color.decode("#dde5b6");
+        jPanelMenu.setBackground(backgroundColor);
+        jPanelTable.setBackground(backgroundColor);
+
+        // Set the images
+        String imagePath = ".\\src\\main\\java\\danielcastro\\karaokeaed\\img\\";
+        PantallaInicio.initBGImage(imagePath + "BG4.png"
+                , PantallaInicio.labelIntoJPanel(jPanel1));
+        PantallaInicio.initBGImage(imagePath + "saveButton.png", botonSave);
+        PantallaInicio.initBGImage(imagePath + "cancelBoton.png", botonCancel);
+        PantallaInicio.initBGImage(imagePath + "addBoton.png", botonCreate);
+        PantallaInicio.initBGImage(imagePath + "deleteBoton.png", botonDelete);
+    }
+
+
+    public Object createInstance(Class clazz) {
+        if (clazz == null) {
+            throw new IllegalArgumentException("Class cannot be null");
         }
-        return instance;
+        try {
+            Constructor constructor = clazz.getConstructor();
+            return constructor.newInstance();
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException
+                | NoSuchMethodException | SecurityException ex) {
+            throw new IllegalStateException("Error creating instance of class " + clazz, ex);
+        }
     }
 
     private void fixedClassesToArrayList() {
-        listaClases.add(0, Cancion.class);
-        listaClases.add(1, Usuario.class);
-        listaClases.add(2, CancionUsuario.class);
-        jComboTabla.addItem("Cancion");
-        jComboTabla.addItem("Usuario");
-        jComboTabla.addItem("Cancion_Usuario");
+        LinkedHashMap<String, Class> classMap = new LinkedHashMap<>();
+        classMap.put("Cancion", Cancion.class);
+        classMap.put("Usuario", Usuario.class);
+        classMap.put("CancionUsuario", CancionUsuario.class);
+        listaClases.addAll(classMap.values());
+        classMap.keySet().forEach(jComboTabla::addItem);
     }
 
     //Method that creates a list for each class to store the DB info
@@ -133,21 +129,23 @@ public class PantallaCRUD extends javax.swing.JFrame {
     //corresponding list.
     private List extractDBData(Class clazz) {
         //Selects everything for each class and stores it in listaClase.
-        List<Object> listaClase = new ArrayList();
-        EntityManager em = emf.createEntityManager();
-        String nombreClase = clazz.getSimpleName();
-        String query = "SELECT p FROM " + nombreClase + " p";
-        TypedQuery tq = em.createQuery(query, clazz);
-        try {
-            listaClase = tq.getResultList();
-        } catch (NoResultException nrex) {
-            System.out.println("No se ha encontrado ningún resultado en la BD.");
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        } finally {
-            em.close();
-        }
+        List<Object> listaClase = viewObject(em, clazz);
         return listaClase;
+    }
+    
+    private List viewObject(EntityManager em, Class clazz) {
+        List resultList = new ArrayList();
+        if (clazz == Usuario.class) {
+            UsuarioDAOImpl usuarioDAOImpl = new UsuarioDAOImpl(em);
+            resultList = usuarioDAOImpl.findAll();
+        } else if (clazz == Cancion.class) {
+            CancionDAOImpl cancionDAOImpl = new CancionDAOImpl(em);
+            resultList = cancionDAOImpl.findAll();
+        } else if (clazz == CancionUsuario.class) {
+            CancionUsuarioDAOImpl cancionUsuarioDAOImpl = new CancionUsuarioDAOImpl(em);
+            resultList = cancionUsuarioDAOImpl.findAll();
+        }
+        return resultList;
     }
 
     private void updateTable(Class clazz, boolean save) {
@@ -235,7 +233,7 @@ public class PantallaCRUD extends javax.swing.JFrame {
         int rowCount = jTable.getRowCount();
         int columnCount = jTable.getColumnCount();
         for (int i = 0; i < rowCount; i++) {
-            Object instance = objectInstance(clazz);
+            Object instance = createInstance(clazz);
             for (int j = 0; j < columnCount; j++) {
                 String columnName = jTable.getColumnName(j);
                 Object value = jTable.getValueAt(i, j);
@@ -272,10 +270,11 @@ public class PantallaCRUD extends javax.swing.JFrame {
     }
 
     private Object getObjectValue(Class fieldType, Object value) {
-        if (value instanceof String string) {
-            int id = Integer.parseInt(string);
-            EntityManager em = emf.createEntityManager();
-            return em.find(fieldType, id);
+        if (value instanceof String) {
+        String string = (String) value;
+        int id = Integer.parseInt(string);
+            Object objeto = em.find(fieldType, id);
+            return objeto;
         } else {
             return value;
         }
@@ -306,7 +305,6 @@ public class PantallaCRUD extends javax.swing.JFrame {
         botonCancel = new javax.swing.JButton();
         botonSave = new javax.swing.JButton();
         jComboTabla = new javax.swing.JComboBox<>();
-        jTextField1 = new javax.swing.JTextField();
         jPanelTable = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
         jTable = new javax.swing.JTable();
@@ -347,8 +345,6 @@ public class PantallaCRUD extends javax.swing.JFrame {
             }
         });
 
-        jTextField1.setToolTipText("Filtrar");
-
         javax.swing.GroupLayout jPanelMenuLayout = new javax.swing.GroupLayout(jPanelMenu);
         jPanelMenu.setLayout(jPanelMenuLayout);
         jPanelMenuLayout.setHorizontalGroup(
@@ -356,11 +352,9 @@ public class PantallaCRUD extends javax.swing.JFrame {
             .addGroup(jPanelMenuLayout.createSequentialGroup()
                 .addGap(37, 37, 37)
                 .addComponent(botonSave, javax.swing.GroupLayout.PREFERRED_SIZE, 45, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(77, 77, 77)
+                .addGap(119, 119, 119)
                 .addComponent(jComboTabla, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(51, 51, 51)
-                .addComponent(jTextField1, javax.swing.GroupLayout.DEFAULT_SIZE, 230, Short.MAX_VALUE)
-                .addGap(64, 64, 64)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 303, Short.MAX_VALUE)
                 .addComponent(botonCreate, javax.swing.GroupLayout.PREFERRED_SIZE, 45, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(60, 60, 60)
                 .addComponent(botonDelete, javax.swing.GroupLayout.PREFERRED_SIZE, 45, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -371,21 +365,20 @@ public class PantallaCRUD extends javax.swing.JFrame {
         jPanelMenuLayout.setVerticalGroup(
             jPanelMenuLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanelMenuLayout.createSequentialGroup()
-                .addGap(36, 36, 36)
-                .addGroup(jPanelMenuLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(botonSave, javax.swing.GroupLayout.PREFERRED_SIZE, 45, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(jPanelMenuLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addComponent(botonCancel, javax.swing.GroupLayout.PREFERRED_SIZE, 45, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGroup(jPanelMenuLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(botonDelete, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 45, Short.MAX_VALUE)
-                            .addComponent(botonCreate, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                .addGroup(jPanelMenuLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanelMenuLayout.createSequentialGroup()
+                        .addGap(36, 36, 36)
+                        .addGroup(jPanelMenuLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(botonSave, javax.swing.GroupLayout.PREFERRED_SIZE, 45, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(jPanelMenuLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addComponent(botonCancel, javax.swing.GroupLayout.PREFERRED_SIZE, 45, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGroup(jPanelMenuLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(botonDelete, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 45, Short.MAX_VALUE)
+                                    .addComponent(botonCreate, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))))
+                    .addGroup(jPanelMenuLayout.createSequentialGroup()
+                        .addGap(49, 49, 49)
+                        .addComponent(jComboTabla, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanelMenuLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanelMenuLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jComboTabla))
-                .addGap(12, 12, 12))
         );
 
         jPanelTable.setOpaque(false);
@@ -463,82 +456,124 @@ public class PantallaCRUD extends javax.swing.JFrame {
     }//GEN-LAST:event_botonCancelActionPerformed
 
     private void botonSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_botonSaveActionPerformed
-        // TODO add your handling code here:
-        //Saves the values on the current table in its corresponding arrayLists list
         guardarValores(ultimaClase);
 
-        //This code iterates through all of the lists in arrayLists
-        for (Map.Entry<Class, List> entry : arrayLists.entrySet()) {
-            EntityManager em = emf.createEntityManager();
-            Class key = entry.getKey();
-            List listaActual = entry.getValue();
-
-            //If the object needs to be created or updated, it is merged on
-            //the database and then flushed to execute the update.
-            try {
-                for (int i = 0; i < listaActual.size(); i++) {
-                    Object appObj = listaActual.get(i);
-                    em.getTransaction().begin();
-                    em.merge(appObj);
-                    em.flush();
-                    em.getTransaction().commit();
-                }
-            } catch (Exception e) {
-                Toolkit.getDefaultToolkit().beep();
-                JOptionPane.showMessageDialog(null, "Datos incorrectos.",
-                        "Error de inserción", JOptionPane.ERROR_MESSAGE);
-                e.printStackTrace();
-            }
-        }
-
-        LinkedHashMap<Class, List> inversedArrayLists = new LinkedHashMap();
+        List<Object> listaToDeleteCancion = new ArrayList<>();
+        List<Object> listaToDeleteUsuario = new ArrayList<>();
+        List<Object> listaToDeleteCancionUsuario = new ArrayList<>();
+        
         List<Map.Entry<Class, List>> lista = new ArrayList(arrayLists.entrySet());
-        Collections.reverse(lista);
         for (Map.Entry<Class, List> entry : lista) {
-            inversedArrayLists.put(entry.getKey(), entry.getValue());
-        }
-
-        for (Map.Entry<Class, List> entry : inversedArrayLists.entrySet()) {
-            EntityManager em = emf.createEntityManager();
             Class key = entry.getKey();
             List listaActual = entry.getValue();
             List listaClaseDB = extractDBData(key);
-            for (Object objectDB : listaClaseDB) {
-                boolean isInList = false;
-                //The code iterate through the database and for each object it get its id
-                Object idObjectDB = em.getEntityManagerFactory().getPersistenceUnitUtil().getIdentifier(objectDB);
-                for (Object objetoApp : listaActual) {
-                    //The code iterate through the arrayList lists and for each object it get its id
-                    Object idObjetoApp = em.getEntityManagerFactory().getPersistenceUnitUtil().getIdentifier(objetoApp);
-                    //This snippet compares both ids, if both are the same, we know the
-                    //object from the database is in the last, then it won't be removed
-                    //if it is not, that means it was removed
-                    if (idObjectDB.equals(idObjetoApp)) {
-                        isInList = true;
-                        break;
-                    }
+            Map<Object, Object> mapDB = (Map<Object, Object>) listaClaseDB.stream().collect(Collectors.toMap(
+                obj -> em.getEntityManagerFactory().getPersistenceUnitUtil().getIdentifier(obj), obj -> obj));
+
+            List<Object> listaToCreate = new ArrayList<>();
+            List<Object> listaToUpdate = new ArrayList<>();
+            
+            // Create
+            for (Object objetoApp : listaActual) {
+                Object idObjetoApp = em.getEntityManagerFactory().getPersistenceUnitUtil().getIdentifier(objetoApp);
+                if (!mapDB.containsKey(idObjetoApp)) {
+                    listaToCreate.add(objetoApp);
                 }
-                if (!isInList) {
-                    try {
-                        em.getTransaction().begin();
-                        em.remove(em.merge(objectDB));
-                        em.getTransaction().commit();
-                    } catch (Exception e) {
-                        Toolkit.getDefaultToolkit().beep();
-                        JOptionPane.showMessageDialog(null, "Está intentando borrar una columna"
-                                + " referenciado en otra tabla. No se puede realizar esa operación.",
-                                "Error de borrado de columna.", JOptionPane.ERROR_MESSAGE);
-                        e.printStackTrace();
+            }
+
+            // Loop to handle the update operation
+            for (Object objetoApp : listaActual) {
+                Object idObjetoApp = em.getEntityManagerFactory().getPersistenceUnitUtil().getIdentifier(objetoApp);
+                if (mapDB.containsKey(idObjetoApp)) {
+                    listaToUpdate.add(objetoApp);
+                }
+            }
+
+            // Loop to handle the delete operation
+            for (Object objectDB : listaClaseDB) {
+                Object idObjectDB = em.getEntityManagerFactory().getPersistenceUnitUtil().getIdentifier(objectDB);
+                if (!listaActual.stream().anyMatch(obj -> em.getEntityManagerFactory().getPersistenceUnitUtil().getIdentifier(obj).equals(idObjectDB))) {
+                    if(key.getSimpleName().equals("Cancion")) {
+                        listaToDeleteCancion.add(objectDB);
+                    }
+                    if(key.getSimpleName().equals("Usuario")) {
+                        listaToDeleteUsuario.add(objectDB);
+                    }
+                    if(key.getSimpleName().equals("CancionUsuario")) {
+                        listaToDeleteCancionUsuario.add(objectDB);
                     }
                 }
             }
-            em.close();
+            if(key.getSimpleName().equals("Cancionusuario"))
+                deleteObjects(em, key, listaToDeleteCancionUsuario);
+            createObjects(em, key, listaToCreate);
+            updateObjects(em, key, listaToUpdate);
         }
+        deleteObjects(em, Cancion.class, listaToDeleteCancion);
+        deleteObjects(em, Usuario.class, listaToDeleteUsuario);
         PantallaCRUD screenCRUD = new PantallaCRUD();
         this.dispose();
         screenCRUD.setVisible(true);
     }//GEN-LAST:event_botonSaveActionPerformed
+ 
+    private void createObjects(EntityManager em, Class clazz, List<Object> list) {
+        if (clazz == Usuario.class) {
+            UsuarioDAOImpl usuarioDAOImpl = new UsuarioDAOImpl(em);
+            for (Object object : list) {
+                usuarioDAOImpl.add((Usuario) object);
+            }
+        } else if (clazz == Cancion.class) {
+            CancionDAOImpl cancionDAOImpl = new CancionDAOImpl(em);
+            for (Object object : list) {
+                cancionDAOImpl.add((Cancion) object);
+            }
+        } else if (clazz == CancionUsuario.class) {
+            CancionUsuarioDAOImpl cancionUsuarioDAOImpl = new CancionUsuarioDAOImpl(em);
+            for (Object object : list) {
+                cancionUsuarioDAOImpl.add((CancionUsuario) object);
+            }
+        }
+    }
+    
+    private void updateObjects(EntityManager em, Class clazz, List<Object> list) {
+        if (clazz == Usuario.class) {
+            UsuarioDAOImpl usuarioDAOImpl = new UsuarioDAOImpl(em);
+            for (Object object : list) {
+                usuarioDAOImpl.update((Usuario) object);
+            }
+        } else if (clazz == Cancion.class) {
+            CancionDAOImpl cancionDAOImpl = new CancionDAOImpl(em);
+            for (Object object : list) {
+                cancionDAOImpl.update((Cancion) object);
+            }
+        } else if (clazz == CancionUsuario.class) {
+            CancionUsuarioDAOImpl cancionUsuarioDAOImpl = new CancionUsuarioDAOImpl(em);
+            for (Object object : list) {
+                cancionUsuarioDAOImpl.update((CancionUsuario) object);
+            }
+        }
+    }
+        
+    private void deleteObjects(EntityManager em, Class clazz, List<Object> list) {
+        if (clazz == Usuario.class) {
+            UsuarioDAOImpl usuarioDAOImpl = new UsuarioDAOImpl(em);
+            for (Object object : list) {
+                usuarioDAOImpl.delete((Usuario) object);
+            }
+        } else if (clazz == Cancion.class) {
+            CancionDAOImpl cancionDAOImpl = new CancionDAOImpl(em);
+            for (Object object : list) {
+                cancionDAOImpl.delete((Cancion) object);
+            }
+        } else if (clazz == CancionUsuario.class) {
+            CancionUsuarioDAOImpl cancionUsuarioDAOImpl = new CancionUsuarioDAOImpl(em);
+            for (Object object : list) {
+                cancionUsuarioDAOImpl.delete((CancionUsuario) object);
+            }
+        }
+    }
 
+    
     private void botonCreateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_botonCreateActionPerformed
         // TODO add your handling code here:
         //Comprueba la clase seleccionada en el comboBox y la guarda
@@ -547,16 +582,7 @@ public class PantallaCRUD extends javax.swing.JFrame {
         for (Class clazz : listaClases) {
             if (clazz.getSimpleName().equals(selectedItem)) {
                 try {
-                    /*
-                        It uses the getDeclaredConstructor() method of the Class object to 
-                        obtain the default constructor of the class, and the newInstance() 
-                        method of the Constructor object to create a new instance of the class
-                     */
-                    Object emptyRow = objectInstance(clazz);
-                    /*
-                        It gets all the fields of the class, and store them in an array of objects
-                        in order to be able to create the empty object of the selected class.
-                     */
+                    Object emptyRow = createInstance(clazz);
                     Field[] fields = clazz.getDeclaredFields();
                     Object[] rowData = new Object[fields.length];
                     for (int i = 0; i < fields.length; i++) {
@@ -629,6 +655,5 @@ public class PantallaCRUD extends javax.swing.JFrame {
     private javax.swing.JPanel jPanelTable;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable jTable;
-    private javax.swing.JTextField jTextField1;
     // End of variables declaration//GEN-END:variables
 }

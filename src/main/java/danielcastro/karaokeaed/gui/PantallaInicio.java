@@ -7,13 +7,20 @@ package danielcastro.karaokeaed.gui;
 import com.formdev.flatlaf.FlatDarkLaf;
 import java.awt.BorderLayout;
 import java.awt.Image;
+import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.imageio.ImageIO;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 /**
@@ -21,10 +28,8 @@ import javax.swing.JPanel;
  * @author Anima
  */
 public class PantallaInicio extends javax.swing.JFrame {
-
-    /**
-     * Creates new form PantallaInicio
-     */
+    public static EntityManager em;
+    
     public PantallaInicio() {
         initComponents();
         this.setLocationRelativeTo(null);
@@ -85,9 +90,10 @@ public class PantallaInicio extends javax.swing.JFrame {
         jPanel1 = new javax.swing.JPanel();
         jPanel2 = new javax.swing.JPanel();
         jPanel3 = new javax.swing.JPanel();
-        jButton1 = new javax.swing.JButton();
+        botonCRUD = new javax.swing.JButton();
         jButton3 = new javax.swing.JButton();
         jButton2 = new javax.swing.JButton();
+        botonInforme1 = new javax.swing.JButton();
         jPanel4 = new javax.swing.JPanel();
         labelTextoOpcion = new javax.swing.JLabel();
         labelInicio = new javax.swing.JLabel();
@@ -100,22 +106,41 @@ public class PantallaInicio extends javax.swing.JFrame {
         jPanel3.setOpaque(false);
         jPanel3.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        jButton1.setFont(new java.awt.Font("Microsoft JhengHei", 0, 18)); // NOI18N
-        jButton1.setText("CRUD");
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
+        botonCRUD.setFont(new java.awt.Font("Microsoft JhengHei", 0, 18)); // NOI18N
+        botonCRUD.setText("CRUD");
+        botonCRUD.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
+                botonCRUDActionPerformed(evt);
             }
         });
-        jPanel3.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 20, 470, 120));
+        jPanel3.add(botonCRUD, new org.netbeans.lib.awtextra.AbsoluteConstraints(130, 30, 350, 90));
 
         jButton3.setFont(new java.awt.Font("Microsoft JhengHei", 0, 18)); // NOI18N
-        jButton3.setText("INFORMES");
-        jPanel3.add(jButton3, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 170, 470, 120));
+        jButton3.setText("INFORME 2");
+        jButton3.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton3ActionPerformed(evt);
+            }
+        });
+        jPanel3.add(jButton3, new org.netbeans.lib.awtextra.AbsoluteConstraints(130, 250, 350, 90));
 
         jButton2.setFont(new java.awt.Font("Microsoft JhengHei", 0, 18)); // NOI18N
         jButton2.setText("CONFIGURACIÓN");
-        jPanel3.add(jButton2, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 330, 470, 120));
+        jButton2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton2ActionPerformed(evt);
+            }
+        });
+        jPanel3.add(jButton2, new org.netbeans.lib.awtextra.AbsoluteConstraints(130, 360, 350, 90));
+
+        botonInforme1.setFont(new java.awt.Font("Microsoft JhengHei", 0, 18)); // NOI18N
+        botonInforme1.setText("INFORME 1");
+        botonInforme1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                botonInforme1ActionPerformed(evt);
+            }
+        });
+        jPanel3.add(botonInforme1, new org.netbeans.lib.awtextra.AbsoluteConstraints(130, 140, 350, 90));
 
         jPanel2.add(jPanel3, java.awt.BorderLayout.CENTER);
 
@@ -176,12 +201,43 @@ public class PantallaInicio extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+    private void botonCRUDActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_botonCRUDActionPerformed
         // TODO add your handling code here:
-        PantallaCRUD pc = new PantallaCRUD();
-        this.setVisible(false);
-        pc.setVisible(true);
-    }//GEN-LAST:event_jButton1ActionPerformed
+        try {
+            PantallaCRUD pc = new PantallaCRUD();
+            this.setVisible(false);
+            pc.setVisible(true);
+        }catch(Exception e) {
+            Logger.getLogger(PantallaInicio.class.getName()).log(Level.SEVERE
+                    , null, e);
+            Toolkit.getDefaultToolkit().beep();
+            JOptionPane.showMessageDialog(null
+                    , "Error conectándose a la base de datos. "
+                            + "Cambie la configuración de acceso", "Error de conexión"
+                    , JOptionPane.ERROR_MESSAGE);
+        }
+    }//GEN-LAST:event_botonCRUDActionPerformed
+
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+        // TODO add your handling code here:
+        PantallaConfig pg = new PantallaConfig(this, true);
+        this.dispose();
+        pg.setVisible(true);
+    }//GEN-LAST:event_jButton2ActionPerformed
+
+    private void botonInforme1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_botonInforme1ActionPerformed
+        // TODO add your handling code here:
+        PantallaInforme1 pi = new PantallaInforme1(PantallaInicio.em);
+        this.dispose();
+        pi.setVisible(true);
+    }//GEN-LAST:event_botonInforme1ActionPerformed
+
+    private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
+        // TODO add your handling code here:
+        PantallaInforme2 pi = new PantallaInforme2(PantallaInicio.em);
+        this.dispose();
+        pi.setVisible(true);
+    }//GEN-LAST:event_jButton3ActionPerformed
 
     /**
      * @param args the command line arguments
@@ -219,7 +275,8 @@ public class PantallaInicio extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton jButton1;
+    private javax.swing.JButton botonCRUD;
+    private javax.swing.JButton botonInforme1;
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
     private javax.swing.JPanel jPanel1;
